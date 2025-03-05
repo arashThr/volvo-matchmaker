@@ -23,7 +23,7 @@ export default function Home() {
     });
     const data = await res.json();
     setResponse(JSON.stringify(data, null, 2));
-    setFocusedModel(data.recommendations[0]); // Set #1 as default focus
+    setFocusedModel(data.recommendations[0]);
   };
 
   const toggleFeature = (feature: string) => {
@@ -39,7 +39,6 @@ export default function Home() {
     <div style={styles.container}>
       <h1 style={styles.title}>Volvo Car Finder</h1>
       <form onSubmit={handleSubmit} style={styles.form}>
-        {/* Q1: Driving Distance */}
         <div style={styles.question}>
           <h3 style={styles.questionTitle}>How much do you drive daily?</h3>
           <div style={styles.options}>
@@ -58,8 +57,6 @@ export default function Home() {
             ))}
           </div>
         </div>
-
-        {/* Q2: Usage */}
         <div style={styles.question}>
           <h3 style={styles.questionTitle}>What’s your primary usage?</h3>
           <div style={styles.options}>
@@ -78,8 +75,6 @@ export default function Home() {
             ))}
           </div>
         </div>
-
-        {/* Q3: Features (Multi-select) */}
         <div style={styles.question}>
           <h3 style={styles.questionTitle}>What features matter to you? <span style={styles.subtitle}>(Select all that apply)</span></h3>
           <div style={styles.options}>
@@ -104,8 +99,6 @@ export default function Home() {
             ))}
           </div>
         </div>
-
-        {/* Q4: Style */}
         <div style={styles.question}>
           <h3 style={styles.questionTitle}>What style do you prefer?</h3>
           <div style={styles.options}>
@@ -124,7 +117,6 @@ export default function Home() {
             ))}
           </div>
         </div>
-
         <button type="submit" style={styles.button}>Find My Volvo</button>
       </form>
 
@@ -132,7 +124,6 @@ export default function Home() {
         <div style={styles.response}>
           <h3 style={styles.responseTitle}>Your Recommended Volvos</h3>
           <div style={styles.recommendationContainer}>
-            {/* Model Selection */}
             <div style={styles.modelButtons}>
               {JSON.parse(response).recommendations.map((model: string, index: number) => (
                 <button
@@ -148,8 +139,6 @@ export default function Home() {
                 </button>
               ))}
             </div>
-
-            {/* Focused Model Details */}
             {focusedModel && (
               <div style={styles.focusedModel}>
                 <h4 style={styles.focusedTitle}>Selected: {focusedModel}</h4>
@@ -173,32 +162,47 @@ function QuestionInput({ model }: { model: string }) {
 
   const handleAsk = () => {
     if (!question) return;
+    setAnswer(""); // Clear previous answer
     const source = new EventSource(
       `/api/ask?model=${encodeURIComponent(model)}&q=${encodeURIComponent(question)}`
     );
     source.onmessage = (e) => {
-      if (e.data === "done") {
-        setAnswer("Question processed!");
+      const data = JSON.parse(e.data);
+      if (data.done) {
+        source.close();
+      } else if (data.text) {
+        setAnswer((prev) => prev + data.text); // Append each word
+      } else if (data.error) {
+        setAnswer(`Error: ${data.error}`);
         source.close();
       }
     };
-    source.onerror = () => source.close();
+    source.onerror = () => {
+      setAnswer((prev) => prev + "\n[Connection closed]");
+      source.close();
+    };
     setQuestion("");
   };
 
   return (
     <div style={styles.questionContainer}>
-      <input
-        type="text"
-        value={question}
-        onChange={(e) => setQuestion(e.target.value)}
-        placeholder={`Ask about ${model} (e.g., colors, horsepower)`}
-        style={styles.questionInput}
-      />
-      <button onClick={handleAsk} style={styles.askButton}>
-        Ask
-      </button>
-      {answer && <p style={styles.answer}>{answer}</p>}
+      <div style={styles.inputRow}>
+        <input
+          type="text"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder={`Ask about ${model} (e.g., colors, horsepower)`}
+          style={styles.questionInput}
+        />
+        <button onClick={handleAsk} style={styles.askButton}>
+          Ask
+        </button>
+      </div>
+      {answer && (
+        <div style={styles.answerContainer}>
+          <p style={styles.answer}>{answer}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -330,12 +334,17 @@ const styles = {
     flexDirection: "column" as const,
     gap: "10px",
   },
+  inputRow: {
+    display: "flex",
+    gap: "10px",
+    alignItems: "center",
+  },
   questionInput: {
     padding: "8px",
     fontSize: "1rem",
     border: "1px solid #ccc",
     borderRadius: "4px",
-    width: "100%",
+    flexGrow: 1,
   },
   askButton: {
     padding: "8px 16px",
@@ -345,11 +354,17 @@ const styles = {
     border: "none",
     borderRadius: "4px",
     cursor: "pointer",
-    alignSelf: "flex-start" as const,
+  },
+  answerContainer: {
+    marginTop: "10px",
+    padding: "10px",
+    backgroundColor: "#f9f9f9",
+    borderRadius: "4px",
   },
   answer: {
-    fontSize: "0.9rem",
+    fontSize: "1rem",
     color: "#333",
-    marginTop: "5px",
+    whiteSpace: "pre-wrap" as const,
+    margin: 0,
   },
 };
