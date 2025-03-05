@@ -8,9 +8,14 @@ export default function Home() {
     Q4: "",
   });
   const [response, setResponse] = useState<string | null>(null);
+  const [focusedModel, setFocusedModel] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!answers.Q1 || !answers.Q2 || !answers.Q4) {
+      alert("Please answer all required questions.");
+      return;
+    }
     const res = await fetch("/api/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -18,6 +23,7 @@ export default function Home() {
     });
     const data = await res.json();
     setResponse(JSON.stringify(data, null, 2));
+    setFocusedModel(data.recommendations[0]); // Set #1 as default focus
   };
 
   const toggleFeature = (feature: string) => {
@@ -37,23 +43,19 @@ export default function Home() {
         <div style={styles.question}>
           <h3 style={styles.questionTitle}>How much do you drive daily?</h3>
           <div style={styles.options}>
-            {["Less than 20 miles", "20-50 miles", "More than 50 miles"].map(
-              (opt, i) => (
-                <label key={opt} style={styles.label}>
-                  <input
-                    type="radio"
-                    name="Q1"
-                    value={i.toString()}
-                    checked={answers.Q1 === i.toString()}
-                    onChange={(e) =>
-                      setAnswers({ ...answers, Q1: e.target.value })
-                    }
-                    style={styles.radio}
-                  />
-                  {opt}
-                </label>
-              )
-            )}
+            {["Less than 20 miles", "20-50 miles", "More than 50 miles"].map((opt, i) => (
+              <label key={opt} style={styles.label}>
+                <input
+                  type="radio"
+                  name="Q1"
+                  value={i.toString()}
+                  checked={answers.Q1 === i.toString()}
+                  onChange={(e) => setAnswers({ ...answers, Q1: e.target.value })}
+                  style={styles.radio}
+                />
+                {opt}
+              </label>
+            ))}
           </div>
         </div>
 
@@ -61,32 +63,25 @@ export default function Home() {
         <div style={styles.question}>
           <h3 style={styles.questionTitle}>What’s your primary usage?</h3>
           <div style={styles.options}>
-            {["City commuting", "Family trips", "Outdoor adventures"].map(
-              (opt, i) => (
-                <label key={opt} style={styles.label}>
-                  <input
-                    type="radio"
-                    name="Q2"
-                    value={i.toString()}
-                    checked={answers.Q2 === i.toString()}
-                    onChange={(e) =>
-                      setAnswers({ ...answers, Q2: e.target.value })
-                    }
-                    style={styles.radio}
-                  />
-                  {opt}
-                </label>
-              )
-            )}
+            {["City commuting", "Family trips", "Outdoor adventures"].map((opt, i) => (
+              <label key={opt} style={styles.label}>
+                <input
+                  type="radio"
+                  name="Q2"
+                  value={i.toString()}
+                  checked={answers.Q2 === i.toString()}
+                  onChange={(e) => setAnswers({ ...answers, Q2: e.target.value })}
+                  style={styles.radio}
+                />
+                {opt}
+              </label>
+            ))}
           </div>
         </div>
 
         {/* Q3: Features (Multi-select) */}
         <div style={styles.question}>
-          <h3 style={styles.questionTitle}>
-            What features matter to you?{" "}
-            <span style={styles.subtitle}>(Select all that apply)</span>
-          </h3>
+          <h3 style={styles.questionTitle}>What features matter to you? <span style={styles.subtitle}>(Select all that apply)</span></h3>
           <div style={styles.options}>
             {[
               "Sustainability (e.g., electric/hybrid)",
@@ -121,9 +116,7 @@ export default function Home() {
                   name="Q4"
                   value={i.toString()}
                   checked={answers.Q4 === i.toString()}
-                  onChange={(e) =>
-                    setAnswers({ ...answers, Q4: e.target.value })
-                  }
+                  onChange={(e) => setAnswers({ ...answers, Q4: e.target.value })}
                   style={styles.radio}
                 />
                 {opt}
@@ -132,30 +125,44 @@ export default function Home() {
           </div>
         </div>
 
-        <button type="submit" style={styles.button}>
-          Find My Volvo
-        </button>
+        <button type="submit" style={styles.button}>Find My Volvo</button>
       </form>
 
       {response && (
-  <div style={styles.response}>
-    <h3 style={styles.responseTitle}>Your Recommended Volvos</h3>
-    <div>
-      {JSON.parse(response).recommendations.map((model: string, index: number) => (
-        <div key={model} style={styles.recommendationBlock}>
-          <p style={styles.recommendation}>
-            {index + 1}. {model}
-          </p>
-          <QuestionInput model={model} />
+        <div style={styles.response}>
+          <h3 style={styles.responseTitle}>Your Recommended Volvos</h3>
+          <div style={styles.recommendationContainer}>
+            {/* Model Selection */}
+            <div style={styles.modelButtons}>
+              {JSON.parse(response).recommendations.map((model: string, index: number) => (
+                <button
+                  key={model}
+                  onClick={() => setFocusedModel(model)}
+                  style={{
+                    ...styles.modelButton,
+                    backgroundColor: focusedModel === model ? "#0044cc" : "#003087",
+                    fontWeight: focusedModel === model ? 600 : 400,
+                  }}
+                >
+                  {index + 1}. {model}
+                </button>
+              ))}
+            </div>
+
+            {/* Focused Model Details */}
+            {focusedModel && (
+              <div style={styles.focusedModel}>
+                <h4 style={styles.focusedTitle}>Selected: {focusedModel}</h4>
+                <QuestionInput model={focusedModel} />
+              </div>
+            )}
+          </div>
+          <details style={styles.details}>
+            <summary>View Details</summary>
+            <pre style={styles.pre}>{response}</pre>
+          </details>
         </div>
-      ))}
-    </div>
-    <details style={styles.details}>
-      <summary>View Details</summary>
-      <pre style={styles.pre}>{response}</pre>
-    </details>
-  </div>
-)}
+      )}
     </div>
   );
 }
@@ -176,7 +183,7 @@ function QuestionInput({ model }: { model: string }) {
       }
     };
     source.onerror = () => source.close();
-    setQuestion(""); // Clear input
+    setQuestion("");
   };
 
   return (
@@ -209,7 +216,7 @@ const styles = {
     fontWeight: 700,
     textAlign: "center" as const,
     marginBottom: "40px",
-    color: "#003087", // Volvo blue-ish tone
+    color: "#003087",
   },
   form: {
     display: "flex",
@@ -273,7 +280,41 @@ const styles = {
   responseTitle: {
     fontSize: "1.25rem",
     fontWeight: 600,
-    marginBottom: "10px",
+    marginBottom: "20px",
+  },
+  recommendationContainer: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "20px",
+  },
+  modelButtons: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap" as const,
+  },
+  modelButton: {
+    padding: "8px 16px",
+    fontSize: "1rem",
+    color: "#fff",
+    backgroundColor: "#003087",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+  },
+  focusedModel: {
+    backgroundColor: "#fff",
+    padding: "20px",
+    borderRadius: "8px",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+  },
+  focusedTitle: {
+    fontSize: "1.5rem",
+    fontWeight: 600,
+    color: "#003087",
+    marginBottom: "15px",
+  },
+  details: {
+    marginTop: "20px",
   },
   pre: {
     fontSize: "0.9rem",
@@ -282,15 +323,6 @@ const styles = {
     padding: "10px",
     borderRadius: "4px",
     overflowX: "auto" as const,
-  },
-  recommendation: {
-    fontSize: "1.5rem",
-    fontWeight: 600,
-    color: "#003087",
-    margin: "10px 0",
-  },
-  details: {
-    marginTop: "10px",
   },
   questionContainer: {
     marginTop: "10px",
