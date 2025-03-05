@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export default function Home() {
   const [answers, setAnswers] = useState({
@@ -8,7 +8,6 @@ export default function Home() {
     Q4: "",
   });
   const [response, setResponse] = useState<string | null>(null);
-  const [focusedModel, setFocusedModel] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +22,6 @@ export default function Home() {
     });
     const data = await res.json();
     setResponse(JSON.stringify(data, null, 2));
-    setFocusedModel(data.recommendations[0]);
   };
 
   const toggleFeature = (feature: string) => {
@@ -122,29 +120,10 @@ export default function Home() {
 
       {response && (
         <div style={styles.response}>
-          <h3 style={styles.responseTitle}>Your Recommended Volvos</h3>
-          <div style={styles.recommendationContainer}>
-            <div style={styles.modelButtons}>
-              {JSON.parse(response).recommendations.map((model: string, index: number) => (
-                <button
-                  key={model}
-                  onClick={() => setFocusedModel(model)}
-                  style={{
-                    ...styles.modelButton,
-                    backgroundColor: focusedModel === model ? "#0044cc" : "#003087",
-                    fontWeight: focusedModel === model ? 600 : 400,
-                  }}
-                >
-                  {index + 1}. {model}
-                </button>
-              ))}
-            </div>
-            {focusedModel && (
-              <div style={styles.focusedModel}>
-                <h4 style={styles.focusedTitle}>Selected: {focusedModel}</h4>
-                <QuestionInput model={focusedModel} />
-              </div>
-            )}
+          <h3 style={styles.responseTitle}>Your Recommended Volvo</h3>
+          <div style={styles.focusedModel}>
+            <h4 style={styles.focusedTitle}>Selected: {JSON.parse(response).recommendation}</h4>
+            <ChatBox model={JSON.parse(response).recommendation} />
           </div>
           <details style={styles.details}>
             <summary>View Details</summary>
@@ -156,36 +135,55 @@ export default function Home() {
   );
 }
 
-function QuestionInput({ model }: { model: string }) {
+function ChatBox({ model }: { model: string }) {
   const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
+  const [chatHistory, setChatHistory] = useState<{ type: "question" | "answer"; text: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const chatRef = useRef<HTMLDivElement>(null);
 
   const handleAsk = () => {
     if (!question) return;
-    setAnswer(""); // Clear previous answer
+    setChatHistory((prev) => [...prev, { type: "question", text: question }]);
+    setIsLoading(true);
     const source = new EventSource(
       `/api/ask?model=${encodeURIComponent(model)}&q=${encodeURIComponent(question)}`
     );
+    let answer = "";
     source.onmessage = (e) => {
       const data = JSON.parse(e.data);
       if (data.done) {
         source.close();
       } else if (data.text) {
-        setAnswer((prev) => prev + data.text); // Append each word
+        setIsLoading(false);
+        answer += data.text;
+        setChatHistory((prev) => {
+          const updated = [...prev];
+          if (updated[updated.length - 1]?.type === "answer") {
+            updated[updated.length - 1].text = answer;
+          } else {
+            updated.push({ type: "answer", text: answer });
+          }
+          return updated;
+        });
+        if (chatRef.current) {
+          chatRef.current.scrollTop = chatRef.current.scrollHeight;
+        }
       } else if (data.error) {
-        setAnswer(`Error: ${data.error}`);
+        setChatHistory((prev) => [...prev, { type: "answer", text: `Error: ${data.error}` }]);
+        setIsLoading(false);
         source.close();
       }
     };
     source.onerror = () => {
-      setAnswer((prev) => prev + "\n[Connection closed]");
+      setChatHistory((prev) => [...prev, { type: "answer", text: answer + "\n[Connection closed]" }]);
+      setIsLoading(false);
       source.close();
     };
     setQuestion("");
   };
 
   return (
-    <div style={styles.questionContainer}>
+    <div style={styles.chatContainer}>
       <div style={styles.inputRow}>
         <input
           type="text"
@@ -198,9 +196,20 @@ function QuestionInput({ model }: { model: string }) {
           Ask
         </button>
       </div>
-      {answer && (
-        <div style={styles.answerContainer}>
-          <p style={styles.answer}>{answer}</p>
+      {chatHistory.length > 0 && (
+        <div style={styles.chatHistory} ref={chatRef}>
+          {chatHistory.map((entry, index) => (
+            <div
+              key={index}
+              style={{
+                ...styles.chatEntry,
+                ...(entry.type === "question" ? styles.questionEntry : styles.answerEntry),
+              }}
+            >
+              {entry.text}
+            </div>
+          ))}
+          {isLoading && <div style={styles.loading}>⏳ Loading...</div>}
         </div>
       )}
     </div>
@@ -286,25 +295,6 @@ const styles = {
     fontWeight: 600,
     marginBottom: "20px",
   },
-  recommendationContainer: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "20px",
-  },
-  modelButtons: {
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap" as const,
-  },
-  modelButton: {
-    padding: "8px 16px",
-    fontSize: "1rem",
-    color: "#fff",
-    backgroundColor: "#003087",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-  },
   focusedModel: {
     backgroundColor: "#fff",
     padding: "20px",
@@ -328,11 +318,43 @@ const styles = {
     borderRadius: "4px",
     overflowX: "auto" as const,
   },
-  questionContainer: {
-    marginTop: "10px",
+  chatContainer: {
     display: "flex",
     flexDirection: "column" as const,
     gap: "10px",
+  },
+  chatHistory: {
+    maxHeight: "300px",
+    overflowY: "auto" as const,
+    padding: "10px",
+    backgroundColor: "#f9f9f9",
+    borderRadius: "4px",
+    border: "1px solid #ddd",
+    display: "flex",
+    flexDirection: "column" as const,
+  },
+  chatEntry: {
+    marginBottom: "10px",
+    padding: "8px",
+    borderRadius: "4px",
+    maxWidth: "70%",
+  },
+  questionEntry: {
+    alignSelf: "flex-end" as const,
+    backgroundColor: "#e6f0ff",
+    textAlign: "right" as const,
+  },
+  answerEntry: {
+    alignSelf: "flex-start" as const,
+    backgroundColor: "#fff",
+    border: "1px solid #eee",
+    textAlign: "left" as const,
+  },
+  loading: {
+    fontSize: "0.9rem",
+    color: "#666",
+    alignSelf: "flex-start" as const,
+    marginTop: "5px",
   },
   inputRow: {
     display: "flex",
@@ -354,17 +376,5 @@ const styles = {
     border: "none",
     borderRadius: "4px",
     cursor: "pointer",
-  },
-  answerContainer: {
-    marginTop: "10px",
-    padding: "10px",
-    backgroundColor: "#f9f9f9",
-    borderRadius: "4px",
-  },
-  answer: {
-    fontSize: "1rem",
-    color: "#333",
-    whiteSpace: "pre-wrap" as const,
-    margin: 0,
   },
 };

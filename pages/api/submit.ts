@@ -41,7 +41,7 @@ const models: Record<string, ModelWeights> = {
   },
 };
 
-function calculateRecommendation(answers: Answers): string[] {
+function calculateRecommendation(answers: Answers): string {
   const { Q1, Q2, Q3, Q4 } = answers;
   const styleMap = ["Sedan", "SUV", "Wagon"];
   const targetStyle = styleMap[parseInt(Q4)];
@@ -62,18 +62,19 @@ function calculateRecommendation(answers: Answers): string[] {
     .filter(([model]) => models[model].style === targetStyle)
     .sort((a, b) => b[1] - a[1]); // Descending order
 
-    if (!validModels.length) return ["No matching Volvo found"];
-    return validModels.slice(0, 2).map(([model]) => model); // Top 2
+    console.log(validModels)
+    if (!validModels.length) return "No matching Volvo found";
+    return validModels[0][0];
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === "POST") {
       try {
         const answers: Answers = req.body;
-        const recommendations = calculateRecommendation(answers);
+        const recommendation = calculateRecommendation(answers);
         res.status(200).json({
-          message: "Recommendations calculated",
-          recommendations, // Array of top 2
+          message: "Recommendation calculated",
+          recommendation, // Array of top 2
           answers,
         });
       } catch (error) {
