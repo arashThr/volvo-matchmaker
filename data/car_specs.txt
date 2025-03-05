@@ -1,0 +1,31 @@
+Volvo XC40 Recharge:
+- Type: Electric SUV
+- Colors: Crystal White, Onyx Black, Sage Green
+- Horsepower: 402
+- Range: 293 miles
+- Seating: 5
+- Features: Electric powertrain, Advanced safety suite, Panoramic sunroof
+
+Volvo S60:
+- Type: Luxury Sedan
+- Colors: Denim Blue, Birch Light, Thunder Grey
+- Horsepower: 295
+- Range: N/A (gas/hybrid)
+- Seating: 5
+- Features: Leather upholstery, Pilot Assist, Bowers & Wilkins audio
+
+Volvo XC90:
+- Type: Large SUV
+- Colors: Platinum Grey, Bright Silver, Pebble Grey
+- Horsepower: 316
+- Range: N/A (gas/hybrid)
+- Seating: 7
+- Features: All-wheel drive, Adaptive cruise control, Third-row seating
+
+Volvo V60 Cross Country:
+- Type: Wagon
+- Colors: Osmium Grey, Pine Grey, Fusion Red
+- Horsepower: 250
+- Range: N/A (gas)
+- Seating: 5
+- Features: Raised ground clearance, Hill descent control, Heated seats

@@ -138,23 +138,60 @@ export default function Home() {
       </form>
 
       {response && (
-        <div style={styles.response}>
-          <h3 style={styles.responseTitle}>Your Recommended Volvos</h3>
-          <div>
-            {JSON.parse(response).recommendations.map(
-              (model: string, index: number) => (
-                <p key={model} style={styles.recommendation}>
-                  {index + 1}. {model}
-                </p>
-              )
-            )}
-          </div>
-          <details style={styles.details}>
-            <summary>View Details</summary>
-            <pre style={styles.pre}>{response}</pre>
-          </details>
+  <div style={styles.response}>
+    <h3 style={styles.responseTitle}>Your Recommended Volvos</h3>
+    <div>
+      {JSON.parse(response).recommendations.map((model: string, index: number) => (
+        <div key={model} style={styles.recommendationBlock}>
+          <p style={styles.recommendation}>
+            {index + 1}. {model}
+          </p>
+          <QuestionInput model={model} />
         </div>
-      )}
+      ))}
+    </div>
+    <details style={styles.details}>
+      <summary>View Details</summary>
+      <pre style={styles.pre}>{response}</pre>
+    </details>
+  </div>
+)}
+    </div>
+  );
+}
+
+function QuestionInput({ model }: { model: string }) {
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+
+  const handleAsk = () => {
+    if (!question) return;
+    const source = new EventSource(
+      `/api/ask?model=${encodeURIComponent(model)}&q=${encodeURIComponent(question)}`
+    );
+    source.onmessage = (e) => {
+      if (e.data === "done") {
+        setAnswer("Question processed!");
+        source.close();
+      }
+    };
+    source.onerror = () => source.close();
+    setQuestion(""); // Clear input
+  };
+
+  return (
+    <div style={styles.questionContainer}>
+      <input
+        type="text"
+        value={question}
+        onChange={(e) => setQuestion(e.target.value)}
+        placeholder={`Ask about ${model} (e.g., colors, horsepower)`}
+        style={styles.questionInput}
+      />
+      <button onClick={handleAsk} style={styles.askButton}>
+        Ask
+      </button>
+      {answer && <p style={styles.answer}>{answer}</p>}
     </div>
   );
 }
@@ -254,5 +291,33 @@ const styles = {
   },
   details: {
     marginTop: "10px",
+  },
+  questionContainer: {
+    marginTop: "10px",
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "10px",
+  },
+  questionInput: {
+    padding: "8px",
+    fontSize: "1rem",
+    border: "1px solid #ccc",
+    borderRadius: "4px",
+    width: "100%",
+  },
+  askButton: {
+    padding: "8px 16px",
+    fontSize: "0.9rem",
+    color: "#fff",
+    backgroundColor: "#003087",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    alignSelf: "flex-start" as const,
+  },
+  answer: {
+    fontSize: "0.9rem",
+    color: "#333",
+    marginTop: "5px",
   },
 };
