@@ -1,114 +1,222 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { useState } from "react";
 
 export default function Home() {
-  return (
-    <div
-      className={`${geistSans.variable} ${geistMono.variable} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
-    >
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              pages/index.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [answers, setAnswers] = useState({
+    Q1: "",
+    Q2: "",
+    Q3: [] as string[],
+    Q4: "",
+  });
+  const [response, setResponse] = useState<string | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch("/api/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(answers),
+    });
+    const data = await res.json();
+    setResponse(JSON.stringify(data, null, 2));
+  };
+
+  const toggleFeature = (feature: string) => {
+    setAnswers((prev) => ({
+      ...prev,
+      Q3: prev.Q3.includes(feature)
+        ? prev.Q3.filter((f) => f !== feature)
+        : [...prev.Q3, feature],
+    }));
+  };
+
+  return (
+    <div style={styles.container}>
+      <h1 style={styles.title}>Volvo Car Finder</h1>
+      <form onSubmit={handleSubmit} style={styles.form}>
+        {/* Q1: Driving Distance */}
+        <div style={styles.question}>
+          <h3 style={styles.questionTitle}>How much do you drive daily?</h3>
+          <div style={styles.options}>
+            {["Less than 20 miles", "20-50 miles", "More than 50 miles"].map((opt, i) => (
+              <label key={opt} style={styles.label}>
+                <input
+                  type="radio"
+                  name="Q1"
+                  value={i.toString()}
+                  checked={answers.Q1 === i.toString()}
+                  onChange={(e) => setAnswers({ ...answers, Q1: e.target.value })}
+                  style={styles.radio}
+                />
+                {opt}
+              </label>
+            ))}
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Q2: Usage */}
+        <div style={styles.question}>
+          <h3 style={styles.questionTitle}>What’s your primary usage?</h3>
+          <div style={styles.options}>
+            {["City commuting", "Family trips", "Outdoor adventures"].map((opt, i) => (
+              <label key={opt} style={styles.label}>
+                <input
+                  type="radio"
+                  name="Q2"
+                  value={i.toString()}
+                  checked={answers.Q2 === i.toString()}
+                  onChange={(e) => setAnswers({ ...answers, Q2: e.target.value })}
+                  style={styles.radio}
+                />
+                {opt}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Q3: Features (Multi-select) */}
+        <div style={styles.question}>
+          <h3 style={styles.questionTitle}>What features matter to you? <span style={styles.subtitle}>(Select all that apply)</span></h3>
+          <div style={styles.options}>
+            {[
+              "Sustainability (e.g., electric/hybrid)",
+              "Luxury and comfort",
+              "Advanced safety features",
+              "Spacious interior",
+              "Cutting-edge technology",
+              "All-weather performance",
+            ].map((opt, i) => (
+              <label key={opt} style={styles.label}>
+                <input
+                  type="checkbox"
+                  value={i.toString()}
+                  checked={answers.Q3.includes(i.toString())}
+                  onChange={() => toggleFeature(i.toString())}
+                  style={styles.checkbox}
+                />
+                {opt}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Q4: Style */}
+        <div style={styles.question}>
+          <h3 style={styles.questionTitle}>What style do you prefer?</h3>
+          <div style={styles.options}>
+            {["Sedan", "SUV/Crossover", "Wagon"].map((opt, i) => (
+              <label key={opt} style={styles.label}>
+                <input
+                  type="radio"
+                  name="Q4"
+                  value={i.toString()}
+                  checked={answers.Q4 === i.toString()}
+                  onChange={(e) => setAnswers({ ...answers, Q4: e.target.value })}
+                  style={styles.radio}
+                />
+                {opt}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <button type="submit" style={styles.button}>Find My Volvo</button>
+      </form>
+
+      {response && (
+        <div style={styles.response}>
+          <h3 style={styles.responseTitle}>Server Response:</h3>
+          <pre style={styles.pre}>{response}</pre>
+        </div>
+      )}
     </div>
   );
 }
+
+const styles = {
+  container: {
+    maxWidth: "600px",
+    margin: "0 auto",
+    padding: "40px 20px",
+    fontFamily: "'Helvetica Neue', Arial, sans-serif",
+    color: "#333",
+  },
+  title: {
+    fontSize: "2.5rem",
+    fontWeight: 700,
+    textAlign: "center" as const,
+    marginBottom: "40px",
+    color: "#003087", // Volvo blue-ish tone
+  },
+  form: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "30px",
+  },
+  question: {
+    backgroundColor: "#f9f9f9",
+    padding: "20px",
+    borderRadius: "8px",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+  },
+  questionTitle: {
+    fontSize: "1.25rem",
+    fontWeight: 600,
+    marginBottom: "15px",
+    color: "#222",
+  },
+  subtitle: {
+    fontSize: "0.9rem",
+    fontWeight: 400,
+    color: "#666",
+  },
+  options: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "12px",
+  },
+  label: {
+    display: "flex",
+    alignItems: "center",
+    fontSize: "1rem",
+    cursor: "pointer",
+  },
+  radio: {
+    marginRight: "10px",
+    accentColor: "#003087",
+  },
+  checkbox: {
+    marginRight: "10px",
+    accentColor: "#003087",
+  },
+  button: {
+    padding: "12px 24px",
+    fontSize: "1.1rem",
+    fontWeight: 600,
+    color: "#fff",
+    backgroundColor: "#003087",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    alignSelf: "center" as const,
+    transition: "background-color 0.2s",
+  },
+  response: {
+    marginTop: "40px",
+    padding: "20px",
+    backgroundColor: "#f0f0f0",
+    borderRadius: "8px",
+  },
+  responseTitle: {
+    fontSize: "1.25rem",
+    fontWeight: 600,
+    marginBottom: "10px",
+  },
+  pre: {
+    fontSize: "0.9rem",
+    color: "#333",
+    backgroundColor: "#fff",
+    padding: "10px",
+    borderRadius: "4px",
+    overflowX: "auto" as const,
+  },
+};
