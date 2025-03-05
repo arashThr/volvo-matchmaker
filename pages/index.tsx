@@ -37,19 +37,23 @@ export default function Home() {
         <div style={styles.question}>
           <h3 style={styles.questionTitle}>How much do you drive daily?</h3>
           <div style={styles.options}>
-            {["Less than 20 miles", "20-50 miles", "More than 50 miles"].map((opt, i) => (
-              <label key={opt} style={styles.label}>
-                <input
-                  type="radio"
-                  name="Q1"
-                  value={i.toString()}
-                  checked={answers.Q1 === i.toString()}
-                  onChange={(e) => setAnswers({ ...answers, Q1: e.target.value })}
-                  style={styles.radio}
-                />
-                {opt}
-              </label>
-            ))}
+            {["Less than 20 miles", "20-50 miles", "More than 50 miles"].map(
+              (opt, i) => (
+                <label key={opt} style={styles.label}>
+                  <input
+                    type="radio"
+                    name="Q1"
+                    value={i.toString()}
+                    checked={answers.Q1 === i.toString()}
+                    onChange={(e) =>
+                      setAnswers({ ...answers, Q1: e.target.value })
+                    }
+                    style={styles.radio}
+                  />
+                  {opt}
+                </label>
+              )
+            )}
           </div>
         </div>
 
@@ -57,25 +61,32 @@ export default function Home() {
         <div style={styles.question}>
           <h3 style={styles.questionTitle}>What’s your primary usage?</h3>
           <div style={styles.options}>
-            {["City commuting", "Family trips", "Outdoor adventures"].map((opt, i) => (
-              <label key={opt} style={styles.label}>
-                <input
-                  type="radio"
-                  name="Q2"
-                  value={i.toString()}
-                  checked={answers.Q2 === i.toString()}
-                  onChange={(e) => setAnswers({ ...answers, Q2: e.target.value })}
-                  style={styles.radio}
-                />
-                {opt}
-              </label>
-            ))}
+            {["City commuting", "Family trips", "Outdoor adventures"].map(
+              (opt, i) => (
+                <label key={opt} style={styles.label}>
+                  <input
+                    type="radio"
+                    name="Q2"
+                    value={i.toString()}
+                    checked={answers.Q2 === i.toString()}
+                    onChange={(e) =>
+                      setAnswers({ ...answers, Q2: e.target.value })
+                    }
+                    style={styles.radio}
+                  />
+                  {opt}
+                </label>
+              )
+            )}
           </div>
         </div>
 
         {/* Q3: Features (Multi-select) */}
         <div style={styles.question}>
-          <h3 style={styles.questionTitle}>What features matter to you? <span style={styles.subtitle}>(Select all that apply)</span></h3>
+          <h3 style={styles.questionTitle}>
+            What features matter to you?{" "}
+            <span style={styles.subtitle}>(Select all that apply)</span>
+          </h3>
           <div style={styles.options}>
             {[
               "Sustainability (e.g., electric/hybrid)",
@@ -110,7 +121,9 @@ export default function Home() {
                   name="Q4"
                   value={i.toString()}
                   checked={answers.Q4 === i.toString()}
-                  onChange={(e) => setAnswers({ ...answers, Q4: e.target.value })}
+                  onChange={(e) =>
+                    setAnswers({ ...answers, Q4: e.target.value })
+                  }
                   style={styles.radio}
                 />
                 {opt}
@@ -119,13 +132,27 @@ export default function Home() {
           </div>
         </div>
 
-        <button type="submit" style={styles.button}>Find My Volvo</button>
+        <button type="submit" style={styles.button}>
+          Find My Volvo
+        </button>
       </form>
 
       {response && (
         <div style={styles.response}>
-          <h3 style={styles.responseTitle}>Server Response:</h3>
-          <pre style={styles.pre}>{response}</pre>
+          <h3 style={styles.responseTitle}>Your Recommended Volvos</h3>
+          <div>
+            {JSON.parse(response).recommendations.map(
+              (model: string, index: number) => (
+                <p key={model} style={styles.recommendation}>
+                  {index + 1}. {model}
+                </p>
+              )
+            )}
+          </div>
+          <details style={styles.details}>
+            <summary>View Details</summary>
+            <pre style={styles.pre}>{response}</pre>
+          </details>
         </div>
       )}
     </div>
@@ -218,5 +245,14 @@ const styles = {
     padding: "10px",
     borderRadius: "4px",
     overflowX: "auto" as const,
+  },
+  recommendation: {
+    fontSize: "1.5rem",
+    fontWeight: 600,
+    color: "#003087",
+    margin: "10px 0",
+  },
+  details: {
+    marginTop: "10px",
   },
 };

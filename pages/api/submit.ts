@@ -41,7 +41,7 @@ const models: Record<string, ModelWeights> = {
   },
 };
 
-function calculateRecommendation(answers: Answers): string {
+function calculateRecommendation(answers: Answers): string[] {
   const { Q1, Q2, Q3, Q4 } = answers;
   const styleMap = ["Sedan", "SUV", "Wagon"];
   const targetStyle = styleMap[parseInt(Q4)];
@@ -58,29 +58,28 @@ function calculateRecommendation(answers: Answers): string {
   }
 
   // Filter by style and find max
-  const validModels = Object.entries(scores)
+  const validModels: [string, number][] = Object.entries(scores)
     .filter(([model]) => models[model].style === targetStyle)
-    .map(([model, score]) => [model, score]);
+    .sort((a, b) => b[1] - a[1]); // Descending order
 
-  if (!validModels.length) return "No matching Volvo found";
-  const [recommendedModel] = validModels.reduce((a, b) => (a[1] > b[1] ? a : b));
-  return recommendedModel.toString();
+    if (!validModels.length) return ["No matching Volvo found"];
+    return validModels.slice(0, 2).map(([model]) => model); // Top 2
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === "POST") {
-    try {
-      const answers: Answers = req.body;
-      const recommendation = calculateRecommendation(answers);
-      res.status(200).json({
-        message: "Recommendation calculated",
-        recommendation,
-        answers, // Echo back for debugging
-      });
-    } catch (error) {
-      res.status(500).json({ message: "Error processing answers", error: (error as Error).message });
+    if (req.method === "POST") {
+      try {
+        const answers: Answers = req.body;
+        const recommendations = calculateRecommendation(answers);
+        res.status(200).json({
+          message: "Recommendations calculated",
+          recommendations, // Array of top 2
+          answers,
+        });
+      } catch (error) {
+        res.status(500).json({ message: "Error processing answers", error: (error as Error).message });
+      }
+    } else {
+      res.status(405).json({ message: "Method not allowed" });
     }
-  } else {
-    res.status(405).json({ message: "Method not allowed" });
   }
-}
