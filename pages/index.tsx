@@ -100,7 +100,7 @@ export default function Home() {
         <div style={styles.question}>
           <h3 style={styles.questionTitle}>What style do you prefer?</h3>
           <div style={styles.options}>
-            {["Sedan", "SUV/Crossover", "Wagon"].map((opt, i) => (
+            {["Sedan", "SUV/Crossover", "Wagon", "Flexible"].map((opt, i) => (
               <label key={opt} style={styles.label}>
                 <input
                   type="radio"
