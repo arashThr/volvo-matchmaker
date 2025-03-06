@@ -11,3 +11,8 @@ I'm using Phi4 model for responding to questions about the selected car models: 
 Then, run the development server: `npm run dev`
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Telegram bot
+
+There's also a Telegram bot that does the same job.
+You need to set the `BOT_TOKEN` in `.env` file inside TelegramBot directory before running.
